@@ -3,7 +3,6 @@ package com.lagou.edu.servlet;
 import com.lagou.edu.antition.*;
 import com.lagou.edu.handler.Handler;
 import com.lagou.edu.utils.StringUtils;
-import net.sf.cglib.core.CollectionUtils;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
