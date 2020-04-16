@@ -8,5 +8,5 @@ package com.lagou.edu.service;
  **/
 public interface TestService {
 
-    public void test();
+    public void test(String username);
 }

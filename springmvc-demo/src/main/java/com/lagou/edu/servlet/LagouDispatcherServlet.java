@@ -1,9 +1,6 @@
 package com.lagou.edu.servlet;
 
-import com.lagou.edu.antition.LagouAutowired;
-import com.lagou.edu.antition.LagouController;
-import com.lagou.edu.antition.LagouRequestMapping;
-import com.lagou.edu.antition.LagouService;
+import com.lagou.edu.antition.*;
 import com.lagou.edu.handler.Handler;
 import com.lagou.edu.utils.StringUtils;
 import net.sf.cglib.core.CollectionUtils;
@@ -41,6 +38,9 @@ public class LagouDispatcherServlet extends HttpServlet {
     // ioc容器
     private Map<String, Object> ioc = new HashMap<String, Object>();
 
+    // 权限访问容器
+    private Map<Handler, String[]> securityMap = new HashMap<Handler, String[]>();
+
     @Override
     public void init(ServletConfig config) throws ServletException {
         String configInitParameter = config.getInitParameter("config");
@@ -54,6 +54,8 @@ public class LagouDispatcherServlet extends HttpServlet {
         doAutowired();
         //创建handermapping把url和对应的逻辑类绑定
         initHandlerMapping();
+        //权限初始化
+        initSecurity();
         //处理业务逻辑
         System.out.println("lagou mvc 初始化完成....");
     }
@@ -71,6 +73,8 @@ public class LagouDispatcherServlet extends HttpServlet {
             resp.getWriter().write("404");
             return;
         }
+        //进行权限处理
+        doSecurityHandler(handler, req, resp);
         Parameter[] parameters = handler.getMethod().getParameters();
         Object[] paraValues = new Object[parameters.length];
         Map<String, String[]> parameterMap = req.getParameterMap();
@@ -94,6 +98,58 @@ public class LagouDispatcherServlet extends HttpServlet {
         } catch (InvocationTargetException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 进行权限处理
+     *
+     * @param handler
+     * @param req
+     * @param resp
+     */
+    private void doSecurityHandler(Handler handler, HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String[] strings = securityMap.get(handler);
+        if (strings == null || strings.length == 0) {
+            return;
+        }
+        String username = req.getParameter("username");
+        if (username == null) {
+            resp.getWriter().write("404");
+            return;
+        }
+
+        for (int i = 0; i < strings.length; i++) {
+            if (username.equals(strings[i])) {
+                return;
+            }
+        }
+        resp.setContentType("text/html;charset=UTF-8");
+        resp.getWriter().write(username + "没有权限访问改接口" + handler.getPattern());
+        System.out.println(username + "没有权限访问改接口" + handler.getPattern());
+        return;
+    }
+
+    /**
+     * 权限初始化
+     */
+    private void initSecurity() {
+        if (handlerMapping.isEmpty()) {
+            return;
+        }
+        handlerMapping.forEach(handler -> {
+            LagouSecurity annotation = null;
+            if (handler.getMethod().isAnnotationPresent(LagouSecurity.class)) {
+                annotation = handler.getMethod().getAnnotation(LagouSecurity.class);
+                securityMap.put(handler, annotation.value());
+            } else if (handler.getController().getClass().isAnnotationPresent(LagouSecurity.class)) {
+                annotation = handler.getController().getClass().getAnnotation(LagouSecurity.class);
+                securityMap.put(handler, annotation.value());
+            } else {
+                return;
+            }
+
+        });
+
     }
 
     /**

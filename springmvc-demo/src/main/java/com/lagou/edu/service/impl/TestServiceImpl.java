@@ -12,7 +12,7 @@ import com.lagou.edu.service.TestService;
 @LagouService
 public class TestServiceImpl implements TestService {
     @Override
-    public void test() {
-        System.out.println("测试成功");
+    public void test(String username) {
+        System.out.println(username + "测试成功");
     }
 }
